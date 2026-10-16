@@ -89,18 +89,12 @@
                         android:orientation="vertical">
 
                         <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/min_gap_title"
-                            android:textColor="@color/on_surface"
-                            android:textSize="16sp" />
+                            style="@style/InputTitle"
+                            android:text="@string/min_gap_title" />
 
                         <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/min_gap_hint"
-                            android:textColor="@color/on_surface_variant"
-                            android:textSize="13sp" />
+                            style="@style/InputHint"
+                            android:text="@string/min_gap_hint" />
                     </LinearLayout>
 
                     <EditText
@@ -109,7 +103,7 @@
                         android:layout_width="@dimen/field_width"
                         android:layout_height="wrap_content"
                         android:importantForAutofill="no"
-                        android:imeOptions="actionDone"
+                        android:imeOptions="actionNext"
                         android:inputType="numberDecimal" />
 
                     <TextView style="@style/Unit" />
@@ -194,17 +188,6 @@
                             style="@style/StatValue" />
                     </LinearLayout>
 
-                    <LinearLayout style="@style/StatRow">
-
-                        <TextView
-                            style="@style/StatLabel"
-                            android:text="@string/consumption_title" />
-
-                        <TextView
-                            android:id="@+id/consumption_value"
-                            style="@style/StatValue" />
-                    </LinearLayout>
-
                     <View style="@style/Divider" />
 
                     <TextView
@@ -224,6 +207,148 @@
                         android:text="@string/scheme_hint"
                         android:textColor="@color/on_surface_variant"
                         android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout style="@style/Card">
+
+                <TextView
+                    style="@style/SectionTitle"
+                    android:text="@string/usage_title" />
+
+                <LinearLayout
+                    style="@style/InputRow"
+                    android:layout_marginTop="8dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/InputTitle"
+                            android:text="@string/run_title" />
+
+                        <TextView
+                            style="@style/InputHint"
+                            android:text="@string/run_hint" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/run"
+                        style="@style/Field"
+                        android:layout_width="@dimen/field_width"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:imeOptions="actionNext"
+                        android:inputType="number" />
+
+                    <TextView
+                        style="@style/Unit"
+                        android:text="@string/unit_pcs" />
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/InputRow"
+                    android:layout_marginTop="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/InputTitle"
+                            android:text="@string/roll_title" />
+
+                        <TextView
+                            style="@style/InputHint"
+                            android:text="@string/roll_hint" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/roll_length"
+                        style="@style/Field"
+                        android:layout_width="@dimen/field_width"
+                        android:layout_height="wrap_content"
+                        android:importantForAutofill="no"
+                        android:imeOptions="actionDone"
+                        android:inputType="numberDecimal" />
+
+                    <TextView
+                        style="@style/Unit"
+                        android:text="@string/unit_m" />
+                </LinearLayout>
+
+                <View style="@style/Divider" />
+
+                <TextView
+                    android:id="@+id/usage_missing"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/on_surface_variant"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/usage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout style="@style/StatRow">
+
+                        <TextView
+                            style="@style/StatLabel"
+                            android:text="@string/usage_run_title" />
+
+                        <TextView
+                            android:id="@+id/usage_run"
+                            style="@style/StatValue" />
+                    </LinearLayout>
+
+                    <LinearLayout style="@style/StatRow">
+
+                        <TextView
+                            android:id="@+id/usage_make_ready_title"
+                            style="@style/StatLabel" />
+
+                        <TextView
+                            android:id="@+id/usage_make_ready"
+                            style="@style/StatValue" />
+                    </LinearLayout>
+
+                    <LinearLayout style="@style/StatRow">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/usage_total_title"
+                                android:textColor="@color/on_surface_variant"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                android:id="@+id/usage_total_hint"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/outline"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/usage_total"
+                            style="@style/StatValue"
+                            android:textColor="@color/primary"
+                            android:textSize="24sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

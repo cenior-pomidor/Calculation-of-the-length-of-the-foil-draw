@@ -21,6 +21,8 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.ceniorpomidor.foildraw.calc.FoilCalculator
+import io.github.ceniorpomidor.foildraw.calc.FoilConsumption
+import io.github.ceniorpomidor.foildraw.calc.MAKE_READY_SHARE
 import io.github.ceniorpomidor.foildraw.calc.FoilPattern
 import io.github.ceniorpomidor.foildraw.ui.FoilInputSegmentView
 import io.github.ceniorpomidor.foildraw.ui.FoilInputSegmentView.Kind
@@ -34,6 +36,8 @@ class MainActivity : Activity() {
     private val elementRows = mutableListOf<View>()
     private val gapRows = mutableListOf<View>()
     private lateinit var minGapField: EditText
+    private lateinit var runField: EditText
+    private lateinit var rollField: EditText
     private lateinit var prefs: SharedPreferences
     private var count = 2
 
@@ -46,10 +50,17 @@ class MainActivity : Activity() {
         buildDiagram(find(R.id.diagram))
         minGapField = find(R.id.min_gap)
         setUpNumberField(minGapField, getString(R.string.min_gap_description))
+        runField = find(R.id.run)
+        setUpNumberField(runField, getString(R.string.run_description), decimal = false)
+        rollField = find(R.id.roll_length)
+        setUpNumberField(rollField, getString(R.string.roll_description))
+        text(R.id.usage_make_ready_title, getString(R.string.usage_make_ready_title, Format.percent(MAKE_READY_SHARE)))
 
         heightFields.forEachIndexed { i, field -> field.setText(prefs.getString("height$i", DEFAULT_HEIGHTS[i])) }
         gapFields.forEachIndexed { i, field -> field.setText(prefs.getString("gap$i", DEFAULT_GAPS[i])) }
         minGapField.setText(prefs.getString("minGap", DEFAULT_MIN_GAP))
+        runField.setText(prefs.getString("run", ""))
+        rollField.setText(prefs.getString("roll", DEFAULT_ROLL_LENGTH))
         count = prefs.getInt("count", 2).coerceIn(2, MAX_ELEMENTS)
 
         val countGroup = find<RadioGroup>(R.id.count_group)
@@ -64,6 +75,8 @@ class MainActivity : Activity() {
         heightFields.forEachIndexed { i, field -> field.saveOnChange("height$i") }
         gapFields.forEachIndexed { i, field -> field.saveOnChange("gap$i") }
         minGapField.saveOnChange("minGap")
+        runField.saveOnChange("run")
+        rollField.saveOnChange("roll")
 
         updateRows()
         recalculate()
@@ -114,10 +127,15 @@ class MainActivity : Activity() {
         setUpNumberField(this, description)
     }
 
-    private fun setUpNumberField(field: EditText, description: String) {
-        // Цифровая клавиатура, но с запятой и точкой: на русской раскладке дробь пишут через запятую.
-        field.keyListener = DigitsKeyListener.getInstance("0123456789.,")
-        field.setRawInputType(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL)
+    private fun setUpNumberField(field: EditText, description: String, decimal: Boolean = true) {
+        if (decimal) {
+            // Цифровая клавиатура, но с запятой и точкой: на русской раскладке дробь пишут через запятую.
+            field.keyListener = DigitsKeyListener.getInstance("0123456789.,")
+            field.setRawInputType(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL)
+        } else {
+            field.keyListener = DigitsKeyListener.getInstance("0123456789")
+            field.setRawInputType(InputType.TYPE_CLASS_NUMBER)
+        }
         // Видимых подписей у полей нет; contentDescription заглушил бы для TalkBack введённое значение.
         field.accessibilityDelegate = object : View.AccessibilityDelegate() {
             override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
@@ -152,7 +170,10 @@ class MainActivity : Activity() {
 
         find<View>(R.id.invalid_input).visibility = if (valid) View.GONE else View.VISIBLE
         find<View>(R.id.result).visibility = if (valid) View.VISIBLE else View.GONE
-        if (!valid) return
+        if (!valid) {
+            renderUsage(null)
+            return
+        }
 
         val pattern = FoilPattern(heights.map { it!! }, gaps.map { it!! })
         val result = FoilCalculator.calculate(pattern, minGap!!)
@@ -166,9 +187,37 @@ class MainActivity : Activity() {
         text(R.id.clearance_value, getString(R.string.value_mm, Format.mm(result.clearance)))
         text(R.id.savings_value, getString(R.string.savings_value, Format.percent(result.savings)))
         text(R.id.savings_hint, getString(R.string.savings_hint, Format.mm(result.plainPull)))
-        // Протяжка в мм на удар — это ровно метры на тысячу ударов.
-        text(R.id.consumption_value, getString(R.string.consumption_value, Format.meters(result.pull)))
         find<FoilSchemeView>(R.id.scheme).show(pattern, result.pull)
+        renderUsage(result.pull)
+    }
+
+    /** Ролики фольги на тираж и приладку при протяжке [pull]; null — протяжка не посчитана. */
+    private fun renderUsage(pull: Double?) {
+        val run = runField.text.toString().trim().toLongOrNull()
+        val roll = Format.parse(rollField.text)
+        val usage = if (pull != null && run != null && run in 1..MAX_RUN && roll != null && roll >= 1.0 && roll <= MAX_ROLL_LENGTH) {
+            FoilConsumption(pull, run, roll)
+        } else {
+            null
+        }
+
+        val message = when {
+            usage != null -> null
+            pull == null -> getString(R.string.usage_no_pull)
+            runField.text.isBlank() || rollField.text.isBlank() -> getString(R.string.usage_missing)
+            else -> getString(R.string.usage_invalid)
+        }
+        find<TextView>(R.id.usage_missing).apply {
+            visibility = if (message == null) View.GONE else View.VISIBLE
+            text = message
+        }
+        find<View>(R.id.usage).visibility = if (usage == null) View.GONE else View.VISIBLE
+        if (usage == null) return
+
+        text(R.id.usage_run, getString(R.string.usage_length_rolls, Format.meters(usage.runLength), Format.rolls(usage.runRolls)))
+        text(R.id.usage_make_ready, getString(R.string.usage_length_rolls, Format.meters(usage.makeReadyLength), Format.rolls(usage.makeReadyRolls)))
+        text(R.id.usage_total, Format.plural(usage.rollsNeeded.toLong(), resources.getStringArray(R.array.roll_forms)))
+        text(R.id.usage_total_hint, getString(R.string.usage_total_hint, Format.meters(usage.totalLength)))
     }
 
     private fun text(id: Int, value: String) {
@@ -212,6 +261,9 @@ class MainActivity : Activity() {
         const val MIN_HEIGHT = 0.5
         const val MAX_SIZE = 1000.0
         const val MAX_MIN_GAP = 100.0
+        const val MAX_RUN = 9_999_999L
+        const val MAX_ROLL_LENGTH = 10_000.0
+        const val DEFAULT_ROLL_LENGTH = "120"
         const val DEFAULT_MIN_GAP = "1"
         val DEFAULT_HEIGHTS = listOf("10", "15", "10", "10")
         val DEFAULT_GAPS = listOf("60", "40", "40")

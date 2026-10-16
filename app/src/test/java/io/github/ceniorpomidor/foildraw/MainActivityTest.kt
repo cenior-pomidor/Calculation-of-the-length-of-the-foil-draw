@@ -67,8 +67,27 @@ class MainActivityTest {
         assertEquals("Допустимо от 28,67 до 29,50 мм", activity.text(R.id.pull_window))
         assertEquals("2,00 мм", activity.text(R.id.clearance_value))
         assertEquals("66 %", activity.text(R.id.savings_value))
-        assertEquals("29,0 м", activity.text(R.id.consumption_value))
+        assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.usage_missing).visibility)
         activity.snapshot("2-elements")
+    }
+
+    @Test
+    fun `rolls for the run and make-ready`() {
+        val activity = launch()
+
+        activity.findViewById<EditText>(R.id.run).setText("10000")
+        activity.findViewById<EditText>(R.id.roll_length).setText("120")
+        assertEquals("290,0 м · 2,42 ролика", activity.text(R.id.usage_run))
+        assertEquals("На приладку (20 %)", activity.text(R.id.usage_make_ready_title))
+        assertEquals("58,0 м · 0,48 ролика", activity.text(R.id.usage_make_ready))
+        assertEquals("3 ролика", activity.text(R.id.usage_total))
+        assertEquals("348,0 м вместе с приладкой", activity.text(R.id.usage_total_hint))
+
+        activity.findViewById<EditText>(R.id.run).setText("2000")
+        assertEquals("1 ролик", activity.text(R.id.usage_total))
+        activity.findViewById<EditText>(R.id.run).setText("20000")
+        assertEquals("6 роликов", activity.text(R.id.usage_total))
+        activity.snapshot("foil-usage")
     }
 
     @Test

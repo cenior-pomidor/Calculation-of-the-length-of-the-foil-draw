@@ -19,9 +19,31 @@
     <string name="savings_title">Экономия фольги</string>
     <string name="savings_hint">без вложения — %1$s мм на удар</string>
     <string name="savings_value">%1$s %%</string>
-    <string name="consumption_title">Расход на 1000 ударов</string>
-    <string name="consumption_value">%1$s м</string>
     <string name="scheme_title">Оттиски на фольге</string>
     <string name="scheme_hint">Заштрихован один удар, цифры — порядок ударов. Стрелка справа — протяжка.</string>
+    <string name="usage_title">Расход фольги</string>
+    <string name="run_title">Тираж</string>
+    <string name="run_hint">количество ударов</string>
+    <string name="run_description">Тираж, ударов</string>
+    <string name="roll_title">Намотка ролика</string>
+    <string name="roll_hint">длина фольги в одном ролике</string>
+    <string name="roll_description">Намотка ролика, м</string>
+    <string name="unit_pcs">шт</string>
+    <string name="unit_m">м</string>
+    <string name="usage_run_title">На тираж</string>
+    <string name="usage_make_ready_title">На приладку (%1$s %%)</string>
+    <string name="usage_length_rolls">%1$s м · %2$s ролика</string>
+    <string name="usage_total_title">Понадобится</string>
+    <string name="usage_total_hint">%1$s м вместе с приладкой</string>
+    <!-- Формы для 1, 2–4 и 5+ роликов: выбираются по правилам русского языка, а не языка телефона. -->
+    <string-array name="roll_forms">
+        <item>ролик</item>
+        <item>ролика</item>
+        <item>роликов</item>
+    </string-array>
+    <string name="usage_missing">Введите тираж и намотку ролика, чтобы узнать, сколько роликов понадобится.</string>
+    <string name="usage_no_pull">Расход появится, когда будут заполнены размеры элементов.</string>
+    <string name="usage_invalid">Тираж — от 1 до 9 999 999 ударов, намотка ролика — от 1 до 10 000 м.</string>
+
     <string name="invalid_input">Заполните все поля. Высота элемента — от 0,5 до 1000 мм, промежуток — от 0 до 1000 мм, зазор — до 100 мм.</string>
 </resources>

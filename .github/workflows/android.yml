@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      # Write access is only used to publish a release from a v* tag.
+      contents: write
     steps:
       - uses: actions/checkout@v7
 
@@ -34,3 +37,17 @@ jobs:
           name: screenshots
           path: app/build/outputs/screenshots/*.png
           if-no-files-found: warn
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          version="${tag#v}"
+          grep -q "versionName = \"$version\"" app/build.gradle.kts || { echo "::error::Tag $tag does not match versionName in app/build.gradle.kts"; exit 1; }
+          git fetch --force origin "refs/tags/$tag:refs/tags/$tag"
+          git tag -l --format='%(contents)' "$tag" > notes.md
+          apk="foil-draw-$version.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$apk"
+          gh release create "$tag" "$apk" --title "Протяжка фольги $version" --notes-file notes.md

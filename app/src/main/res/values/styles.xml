@@ -49,9 +49,32 @@
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginStart">8dp</item>
+        <!-- Одна ширина для «мм», «шт» и «м», чтобы поля стояли в одну колонку. -->
+        <item name="android:minWidth">28dp</item>
         <item name="android:text">@string/unit_mm</item>
         <item name="android:textColor">@color/on_surface_variant</item>
         <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="InputRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="InputTitle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/on_surface</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="InputHint">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/on_surface_variant</item>
+        <item name="android:textSize">13sp</item>
     </style>
 
     <style name="StatRow">
