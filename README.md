@@ -82,7 +82,8 @@ a = (x + y + z + c) / (n + 1)        — оптимальная протяжка
 
 ## Выпуск версии
 
-1. Поднять `versionCode` и `versionName` в `app/build.gradle.kts`.
-2. Поставить аннотированный тег с описанием изменений и отправить его:
-   `git tag -a v1.2 -m "…"` и `git push origin v1.2`.
-3. GitHub Actions соберёт APK и опубликует релиз с текстом из тега.
+1. Поднять `versionCode` и `versionName` в `app/build.gradle.kts` и описать изменения
+   в разделе этой версии в [`CHANGELOG.md`](CHANGELOG.md).
+2. Запустить workflow **Android** вручную (Actions → Android → Run workflow) с отметкой
+   `release` — или отправить тег `v<версия>`.
+3. GitHub Actions соберёт APK и опубликует релиз `v<версия>` с текстом из `CHANGELOG.md`.
