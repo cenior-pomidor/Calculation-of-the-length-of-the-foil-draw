@@ -34,13 +34,3 @@ jobs:
           name: screenshots
           path: app/build/outputs/screenshots/*.png
           if-no-files-found: warn
-
-      - name: Print screenshots (temporary)
-        if: always()
-        run: |
-          command -v convert >/dev/null || sudo apt-get install -y -qq imagemagick >/dev/null
-          for f in app/build/outputs/screenshots/*.png; do
-            echo "BEGIN-SHOT $(basename "$f")"
-            convert "$f" -resize 36% -quality 80 jpg:- | base64 -w 180
-            echo "END-SHOT"
-          done
