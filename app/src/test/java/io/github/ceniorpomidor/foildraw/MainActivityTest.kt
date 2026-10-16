@@ -2,6 +2,7 @@ package io.github.ceniorpomidor.foildraw
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -10,11 +11,13 @@ import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import java.io.File
+import java.time.Duration
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -38,6 +41,9 @@ class MainActivityTest {
 
     /** Снимок всего прокручиваемого экрана в app/build/outputs/screenshots. */
     private fun MainActivity.snapshot(name: String) {
+        // Даём пройти кадру, как на устройстве: после смены видимости строк поля
+        // прокручивают текст на место в onPreDraw.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
         val content = findViewById<ScrollView>(R.id.scroll).getChildAt(0)
         content.measure(
             View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY),
