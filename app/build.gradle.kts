@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "io.github.ceniorpomidor.foildraw"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "io.github.ceniorpomidor.foildraw"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }
@@ -43,6 +43,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 kotlin {
@@ -53,4 +57,5 @@ kotlin {
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }

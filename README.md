@@ -69,7 +69,7 @@ APK собирает GitHub Actions при каждом пуше: вкладка
 ./gradlew assembleRelease     # APK в app/build/outputs/apk/release/
 ```
 
-Нужны JDK 17+ и Android SDK (compileSdk 35). APK подписывается ключом
+Нужны JDK 17+ и Android SDK (compileSdk 36). APK подписывается ключом
 `app/foildraw.keystore` из репозитория, чтобы новая сборка ставилась поверх
 старой без удаления. Ключ открытый, поэтому для публикации в магазинах
 приложений он не годится.
