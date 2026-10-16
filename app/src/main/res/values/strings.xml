@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Протяжка фольги</string>
+    <string name="subtitle">Оптимальный шаг протяжки, при котором оттиски следующих ударов ложатся в промежутки между элементами.</string>
+
+    <string name="count_title">Количество элементов</string>
+    <string name="element_description">Высота элемента %1$d, мм</string>
+    <string name="gap_description">Промежуток после элемента %1$d, мм</string>
+    <string name="unit_mm">мм</string>
+    <string name="min_gap_title">Минимальный зазор</string>
+    <string name="min_gap_hint">между соседними оттисками</string>
+    <string name="min_gap_description">Минимальный зазор между оттисками, мм</string>
+
+    <string name="result_title">Оптимальная протяжка</string>
+    <string name="value_mm">%1$s мм</string>
+    <string name="pull_window">Допустимо от %1$s до %2$s мм</string>
+    <string name="pull_not_nested">Оттиски не помещаются в промежутки, поэтому протяжка равна длине рисунка с зазором.</string>
+    <string name="clearance_title">Зазор между оттисками</string>
+    <string name="savings_title">Экономия фольги</string>
+    <string name="savings_hint">без вложения — %1$s мм на удар</string>
+    <string name="savings_value">%1$s %%</string>
+    <string name="consumption_title">Расход на 1000 ударов</string>
+    <string name="consumption_value">%1$s м</string>
+    <string name="scheme_title">Оттиски на фольге</string>
+    <string name="scheme_hint">Заштрихован один удар, цифры — порядок ударов. Стрелка справа — протяжка.</string>
+    <string name="invalid_input">Заполните все поля. Высота элемента — от 0,5 до 1000 мм, промежуток — от 0 до 1000 мм, зазор — до 100 мм.</string>
+</resources>

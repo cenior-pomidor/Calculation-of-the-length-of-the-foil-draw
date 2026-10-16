@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="field_width">88dp</dimen>
+    <dimen name="field_margin">8dp</dimen>
+    <dimen name="unit_margin">8dp</dimen>
+    <dimen name="row_element">56dp</dimen>
+    <dimen name="row_gap">64dp</dimen>
+    <dimen name="row_lead">20dp</dimen>
+</resources>
