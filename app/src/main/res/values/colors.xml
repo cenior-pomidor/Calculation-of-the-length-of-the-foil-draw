@@ -13,4 +13,8 @@
     <color name="strike">#C7CBE0</color>
     <color name="on_strike">#3C4254</color>
     <color name="icon_background">#2F55C5</color>
+    <color name="tile">#FFFFFF</color>
+    <color name="secondary_container">#DCE1F9</color>
+    <color name="on_secondary_container">#151B2C</color>
+    <color name="error">#BA1A1A</color>
 </resources>

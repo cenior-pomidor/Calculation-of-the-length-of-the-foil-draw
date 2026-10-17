@@ -9,14 +9,14 @@ import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
 import android.text.method.DigitsKeyListener
-import android.view.Gravity
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
@@ -24,8 +24,7 @@ import io.github.ceniorpomidor.foildraw.calc.FoilCalculator
 import io.github.ceniorpomidor.foildraw.calc.FoilConsumption
 import io.github.ceniorpomidor.foildraw.calc.MAKE_READY_SHARE
 import io.github.ceniorpomidor.foildraw.calc.FoilPattern
-import io.github.ceniorpomidor.foildraw.ui.FoilInputSegmentView
-import io.github.ceniorpomidor.foildraw.ui.FoilInputSegmentView.Kind
+import io.github.ceniorpomidor.foildraw.ui.FoilInputView
 import io.github.ceniorpomidor.foildraw.ui.FoilSchemeView
 import io.github.ceniorpomidor.foildraw.ui.Format
 
@@ -33,8 +32,7 @@ class MainActivity : Activity() {
 
     private val heightFields = mutableListOf<EditText>()
     private val gapFields = mutableListOf<EditText>()
-    private val elementRows = mutableListOf<View>()
-    private val gapRows = mutableListOf<View>()
+    private lateinit var diagram: FoilInputView
     private lateinit var minGapField: EditText
     private lateinit var runField: EditText
     private lateinit var rollField: EditText
@@ -47,7 +45,8 @@ class MainActivity : Activity() {
         prefs = getSharedPreferences("input", MODE_PRIVATE)
         setUpEdgeToEdge()
 
-        buildDiagram(find(R.id.diagram))
+        diagram = find(R.id.diagram)
+        buildDiagram()
         minGapField = find(R.id.min_gap)
         setUpNumberField(minGapField, getString(R.string.min_gap_description))
         runField = find(R.id.run)
@@ -68,7 +67,6 @@ class MainActivity : Activity() {
         countGroup.setOnCheckedChangeListener { _, id ->
             count = COUNT_BUTTONS.entries.first { it.value == id }.key
             prefs.edit().putInt("count", count).apply()
-            updateRows()
             recalculate()
         }
 
@@ -78,52 +76,25 @@ class MainActivity : Activity() {
         runField.saveOnChange("run")
         rollField.saveOnChange("roll")
 
-        updateRows()
         recalculate()
     }
 
-    private fun buildDiagram(container: LinearLayout) {
-        container.addView(row(Kind.LEAD_IN, null, R.dimen.row_lead))
+    /** Поля схемы по порядку участков: элемент 1, промежуток 1, элемент 2, … */
+    private fun buildDiagram() {
         for (i in 0 until MAX_ELEMENTS) {
             val height = numberField(getString(R.string.element_description, i + 1))
             heightFields += height
-            elementRows += row(Kind.ELEMENT, height, R.dimen.row_element).also(container::addView)
+            diagram.addDimension(height, TextView(this, null, 0, R.style.Unit), DEFAULT_HEIGHTS[i].toDouble())
             if (i < MAX_ELEMENTS - 1) {
                 val gap = numberField(getString(R.string.gap_description, i + 1))
                 gapFields += gap
-                gapRows += row(Kind.GAP, gap, R.dimen.row_gap).also(container::addView)
+                diagram.addDimension(gap, TextView(this, null, 0, R.style.Unit), DEFAULT_GAPS[i].toDouble())
             }
         }
-        container.addView(row(Kind.LEAD_OUT, null, R.dimen.row_lead))
-    }
-
-    /** Строка схемы: участок фольги слева и поле ввода размера справа. */
-    private fun row(kind: Kind, field: EditText?, heightRes: Int): View {
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(heightRes))
-        }
-        row.addView(FoilInputSegmentView(this, kind), LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
-
-        val fieldWidth = resources.getDimensionPixelSize(R.dimen.field_width)
-        val unit = TextView(this, null, 0, R.style.Unit)
-        unit.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
-        val unitMargin = resources.getDimensionPixelSize(R.dimen.unit_margin)
-        val fieldMargin = resources.getDimensionPixelSize(R.dimen.field_margin)
-        if (field == null) {
-            // Пустое место той же ширины, чтобы линии фольги шли без изломов.
-            row.addView(View(this), LinearLayout.LayoutParams(fieldMargin + fieldWidth + unitMargin + unit.measuredWidth, 0))
-        } else {
-            row.addView(field, LinearLayout.LayoutParams(fieldWidth, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginStart = fieldMargin })
-            row.addView(unit, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginStart = unitMargin })
-        }
-        return row
     }
 
     private fun numberField(description: String) = EditText(this, null, 0, R.style.Field).apply {
         importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-        imeOptions = EditorInfo.IME_ACTION_NEXT
         setUpNumberField(this, description)
     }
 
@@ -135,6 +106,17 @@ class MainActivity : Activity() {
         } else {
             field.keyListener = DigitsKeyListener.getInstance("0123456789")
             field.setRawInputType(InputType.TYPE_CLASS_NUMBER)
+        }
+        // Enter («Готово») сворачивает клавиатуру и снимает фокус с поля.
+        field.imeOptions = EditorInfo.IME_ACTION_DONE
+        field.setOnEditorActionListener { view, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || event?.keyCode == KeyEvent.KEYCODE_ENTER) {
+                getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(view.windowToken, 0)
+                view.clearFocus()
+                true
+            } else {
+                false
+            }
         }
         // Видимых подписей у полей нет; contentDescription заглушил бы для TalkBack введённое значение.
         field.accessibilityDelegate = object : View.AccessibilityDelegate() {
@@ -154,19 +136,20 @@ class MainActivity : Activity() {
         }
     })
 
-    private fun updateRows() {
-        elementRows.forEachIndexed { i, row -> row.visibility = if (i < count) View.VISIBLE else View.GONE }
-        gapRows.forEachIndexed { i, row -> row.visibility = if (i < count - 1) View.VISIBLE else View.GONE }
-    }
-
     private fun recalculate() {
         val heights = heightFields.take(count).map { Format.parse(it.text) }
         val gaps = gapFields.take(count - 1).map { Format.parse(it.text) }
         val minGap = if (minGapField.text.isBlank()) 0.0 else Format.parse(minGapField.text)
 
-        val valid = heights.all { it != null && it >= MIN_HEIGHT && it <= MAX_SIZE } &&
-            gaps.all { it != null && it >= 0.0 && it <= MAX_SIZE } &&
-            minGap != null && minGap >= 0.0 && minGap <= MAX_MIN_GAP
+        val heightsOk = heights.map { it != null && it >= MIN_HEIGHT && it <= MAX_SIZE }
+        val gapsOk = gaps.map { it != null && it >= 0.0 && it <= MAX_SIZE }
+        val minGapOk = minGap != null && minGap >= 0.0 && minGap <= MAX_MIN_GAP
+        heightsOk.forEachIndexed { i, ok -> heightFields[i].markInvalid(!ok) }
+        gapsOk.forEachIndexed { i, ok -> gapFields[i].markInvalid(!ok) }
+        minGapField.markInvalid(!minGapOk)
+        diagram.show(2 * count - 1, List(2 * count - 1) { if (it % 2 == 0) heights[it / 2] else gaps[it / 2] })
+
+        val valid = heightsOk.all { it } && gapsOk.all { it } && minGapOk
 
         find<View>(R.id.invalid_input).visibility = if (valid) View.GONE else View.VISIBLE
         find<View>(R.id.result).visibility = if (valid) View.VISIBLE else View.GONE
@@ -195,8 +178,12 @@ class MainActivity : Activity() {
     private fun renderUsage(pull: Double?) {
         val run = runField.text.toString().trim().toLongOrNull()
         val roll = Format.parse(rollField.text)
-        val usage = if (pull != null && run != null && run in 1..MAX_RUN && roll != null && roll >= 1.0 && roll <= MAX_ROLL_LENGTH) {
-            FoilConsumption(pull, run, roll)
+        val runOk = run != null && run in 1..MAX_RUN
+        val rollOk = roll != null && roll >= 1.0 && roll <= MAX_ROLL_LENGTH
+        runField.markInvalid(!runOk)
+        rollField.markInvalid(!rollOk)
+        val usage = if (pull != null && runOk && rollOk) {
+            FoilConsumption(pull, run!!, roll!!)
         } else {
             null
         }
@@ -218,6 +205,11 @@ class MainActivity : Activity() {
         text(R.id.usage_make_ready, getString(R.string.usage_length_rolls, Format.meters(usage.makeReadyLength), Format.rolls(usage.makeReadyRolls)))
         text(R.id.usage_total, Format.plural(usage.rollsNeeded.toLong(), resources.getStringArray(R.array.roll_forms)))
         text(R.id.usage_total_hint, getString(R.string.usage_total_hint, Format.meters(usage.totalLength)))
+    }
+
+    /** Красная рамка у поля с недопустимым значением; пустое поле не подсвечиваем, пока его заполняют. */
+    private fun EditText.markInvalid(invalid: Boolean) {
+        isActivated = invalid && text.isNotBlank()
     }
 
     private fun text(id: Int, value: String) {

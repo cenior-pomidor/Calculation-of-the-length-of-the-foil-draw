@@ -5,14 +5,17 @@ import android.graphics.Canvas
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.TextView
 import java.io.File
 import java.time.Duration
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
@@ -30,20 +33,20 @@ class MainActivityTest {
 
     private fun MainActivity.text(id: Int) = findViewById<TextView>(id).text.toString()
 
+    /** Видимые поля схемы по порядку участков: элемент, промежуток, элемент, … */
     private fun MainActivity.visibleFields(): List<EditText> {
-        val diagram = findViewById<LinearLayout>(R.id.diagram)
+        val diagram = findViewById<ViewGroup>(R.id.diagram)
         return (0 until diagram.childCount)
-            .map { diagram.getChildAt(it) as ViewGroup }
+            .map { diagram.getChildAt(it) }
             .filter { it.visibility == View.VISIBLE }
-            .flatMap { row -> (0 until row.childCount).map { row.getChildAt(it) } }
             .filterIsInstance<EditText>()
     }
 
     /** Снимок всего прокручиваемого экрана в app/build/outputs/screenshots. */
     private fun MainActivity.snapshot(name: String) {
-        // Даём пройти кадру, как на устройстве: после смены видимости строк поля
-        // прокручивают текст на место в onPreDraw.
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
+        // Даём пройти кадрам, как на устройстве: схема дорисовывает анимацию, а поля,
+        // ставшие видимыми, прокручивают текст на место в onPreDraw.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
         val content = findViewById<ScrollView>(R.id.scroll).getChildAt(0)
         content.measure(
             View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY),
@@ -129,5 +132,43 @@ class MainActivityTest {
     @Config(qualifiers = "+night")
     fun `dark theme`() {
         launch().snapshot("2-elements-night")
+    }
+
+    @Test
+    fun `done key hides the keyboard and leaves the field`() {
+        val activity = launch()
+        val field = activity.visibleFields()[1]
+        val keyboard = activity.getSystemService(InputMethodManager::class.java)
+
+        field.requestFocus()
+        keyboard.showSoftInput(field, 0)
+        assertTrue(shadowOf(keyboard).isSoftInputVisible)
+
+        field.onEditorAction(EditorInfo.IME_ACTION_DONE)
+        assertFalse(shadowOf(keyboard).isSoftInputVisible)
+        assertFalse(field.hasFocus())
+    }
+
+    @Test
+    fun `out of range value is outlined`() {
+        val activity = launch()
+        val field = activity.visibleFields().first()
+
+        field.setText("5000")
+        assertTrue(field.isActivated)
+        field.setText("")
+        assertFalse(field.isActivated)
+        field.setText("12")
+        assertFalse(field.isActivated)
+    }
+
+    @Test
+    fun `diagram follows entered sizes`() {
+        val activity = launch()
+        val (_, gap, second) = activity.visibleFields()
+        gap.setText("20")
+        second.setText("40")
+        gap.requestFocus()
+        activity.snapshot("diagram-resized")
     }
 }
