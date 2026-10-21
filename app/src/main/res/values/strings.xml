@@ -22,7 +22,7 @@
     <string name="savings_hint">без вложения — %1$s мм на удар</string>
     <string name="savings_value">%1$s %%</string>
     <string name="scheme_title">Оттиски на фольге</string>
-    <string name="scheme_hint">Лента от начала ролика: у каждого удара свой цвет, номер удара — в кружке. Стрелка справа — протяжка.</string>
+    <string name="scheme_hint">Лента от начала ролика — прокручивайте вниз, следующие удары дорисовываются сами. У каждого удара свой цвет. Стрелка справа — протяжка.</string>
     <string name="strike_label">удар %1$d</string>
     <string name="usage_title">Расход фольги</string>
     <string name="run_title">Тираж</string>

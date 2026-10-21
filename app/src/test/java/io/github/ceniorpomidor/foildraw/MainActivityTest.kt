@@ -14,6 +14,7 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.ceniorpomidor.foildraw.ui.FoilSchemeView
 import io.github.ceniorpomidor.foildraw.ui.SwipePager
 import java.io.File
 import java.time.Duration
@@ -148,6 +149,22 @@ class MainActivityTest {
         val location = IntArray(2).also(scheme::getLocationInWindow)
         assertTrue(scheme.height > 0)
         assertTrue(location[1] + scheme.height <= activity.window.decorView.height)
+    }
+
+    @Test
+    fun `impressions tape scrolls endlessly`() {
+        val activity = launch()
+        activity.findViewById<RadioButton>(R.id.tab_pull).performClick()
+        idle()
+        val scheme = activity.findViewById<FoilSchemeView>(R.id.scheme)
+        assertEquals(1, scheme.visibleStrikes().first)
+
+        scheme.scrollBy(100_000f)
+        assertTrue(scheme.visibleStrikes().first > 100)
+        activity.screen("2-pull-scrolled", R.id.tab_pull)
+
+        scheme.scrollBy(-1_000_000f)
+        assertEquals(0f, scheme.offset)
     }
 
     @Test

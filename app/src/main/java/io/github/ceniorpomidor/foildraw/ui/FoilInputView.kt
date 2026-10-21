@@ -6,6 +6,7 @@ import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Shader
 import android.util.AttributeSet
@@ -17,11 +18,10 @@ import io.github.ceniorpomidor.foildraw.R
 import kotlin.math.roundToInt
 
 /**
- * Схема ввода: лента фольги с элементами и промежутками, справа — столбец полей.
- * Каждое поле стоит ровно напротив середины своего участка, к нему от размерной
- * стрелки идёт короткая выноска. Высоты участков складываются из минимума, в
- * который помещается поле, и доли, пропорциональной размеру, поэтому при вводе
- * схема плавно перестраивается. Участок, размер которого редактируется,
+ * Схема ввода: лента фольги с элементами и промежутками строго в масштабе
+ * введённых размеров, справа — столбец полей. Поле стоит напротив середины своего
+ * участка, к нему от размерной стрелки идёт выноска; если участки тоньше полей,
+ * поля раздвигаются, а выноски идут с изломом. При вводе схема плавно перестраивается. Участок, размер которого редактируется,
  * подсвечивается.
  */
 class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context, attrs) {
@@ -34,8 +34,9 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
     private val onPrimary = context.getColor(R.color.on_primary)
     private val primaryContainer = context.getColor(R.color.primary_container)
 
-    private val segmentMin = 50f * density
-    private val flexPerSegment = 22f * density
+    /** Средняя высота участка: столько, чтобы поля в среднем помещались без сдвига. */
+    private val slot = 58f * density
+    private val fieldGap = 6f * density
     private val lead = 20f * density
     private val boxWidth = resources.getDimensionPixelSize(R.dimen.box_width)
     private val boxHeight = resources.getDimensionPixelSize(R.dimen.box_height)
@@ -61,6 +62,7 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
     }
 
     private val rect = RectF()
+    private val leader = Path()
     private val tapePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val edgePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -74,6 +76,7 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
     private val leaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
     private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
 
@@ -124,23 +127,31 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
         }
     }
 
-    /** Границы участков в пикселях при текущем кадре анимации. */
+    /** Границы участков в пикселях при текущем кадре анимации — строго в масштабе размеров. */
     private fun boundaries(): FloatArray {
-        val flex = dimensions * flexPerSegment
-        val result = FloatArray(dimensions + 1)
-        result[0] = lead
-        for (i in 0 until dimensions) {
-            val share = (from[i + 1] - from[i]) + ((to[i + 1] - to[i]) - (from[i + 1] - from[i])) * progress
-            result[i + 1] = result[i] + segmentMin + flex * share.toFloat()
-        }
-        return result
+        val span = dimensions * slot
+        return FloatArray(dimensions + 1) { i -> lead + span * (from[i] + (to[i] - from[i]) * progress).toFloat() }
+    }
+
+    /**
+     * Центры полей: напротив середины своего участка, а где участки тоньше поля —
+     * раздвинуты ровно настолько, чтобы поля не налезали друг на друга.
+     */
+    private fun fieldCenters(bounds: FloatArray): FloatArray {
+        val step = boxHeight + fieldGap
+        val centers = FloatArray(dimensions) { (bounds[it] + bounds[it + 1]) / 2 }
+        val top = boxHeight / 2f
+        val bottom = height - boxHeight / 2f
+        for (i in centers.indices) centers[i] = maxOf(centers[i], if (i == 0) top else centers[i - 1] + step)
+        for (i in centers.indices.reversed()) centers[i] = minOf(centers[i], if (i == centers.lastIndex) bottom else centers[i + 1] - step)
+        return centers
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val boxWidthSpec = MeasureSpec.makeMeasureSpec(boxWidth, MeasureSpec.EXACTLY)
         val boxHeightSpec = MeasureSpec.makeMeasureSpec(boxHeight, MeasureSpec.EXACTLY)
         for (i in 0 until dimensions) boxes[i].measure(boxWidthSpec, boxHeightSpec)
-        val height = 2 * lead + dimensions * (segmentMin + flexPerSegment)
+        val height = 2 * lead + dimensions * slot
         setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), resolveSize(height.roundToInt(), heightMeasureSpec))
     }
 
@@ -148,10 +159,10 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
 
     private fun placeBoxes() {
         if (dimensions == 0) return
-        val bounds = boundaries()
+        val centers = fieldCenters(boundaries())
         val left = width - boxWidth
         for (i in 0 until dimensions) {
-            val top = ((bounds[i] + bounds[i + 1]) / 2).roundToInt() - boxHeight / 2
+            val top = centers[i].roundToInt() - boxHeight / 2
             boxes[i].layout(left, top, left + boxWidth, top + boxHeight)
         }
     }
@@ -167,6 +178,7 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
     override fun onDraw(canvas: Canvas) {
         if (dimensions == 0) return
         val bounds = boundaries()
+        val centers = fieldCenters(bounds)
         val fieldLeft = (width - boxWidth).toFloat()
         val arrowX = fieldLeft - 22f * density
         val tapeLeft = 2f * density
@@ -209,11 +221,17 @@ class FoilInputView(context: Context, attrs: AttributeSet?) : ViewGroup(context,
             }
             drafting.arrow(canvas, arrowX, bounds[i] + gap, bounds[i + 1] - gap, color, if (isFocused) 2f else 1.4f)
 
-            // Короткая выноска от середины стрелки к полю.
+            // Выноска от середины стрелки к полю: прямая, если поле напротив участка, иначе с изломом.
             val middle = (bounds[i] + bounds[i + 1]) / 2
+            val target = centers[i]
             leaderPaint.color = color
             leaderPaint.strokeWidth = (if (isFocused) 2f else 1.2f) * density
-            canvas.drawLine(arrowX, middle, fieldLeft - 3f * density, middle, leaderPaint)
+            leader.reset()
+            leader.moveTo(arrowX, middle)
+            leader.lineTo(arrowX + 6f * density, middle)
+            leader.lineTo(fieldLeft - 8f * density, target)
+            leader.lineTo(fieldLeft - 3f * density, target)
+            canvas.drawPath(leader, leaderPaint)
             fillPaint.color = color
             canvas.drawCircle(arrowX, middle, (if (isFocused) 3.5f else 3f) * density, fillPaint)
         }
