@@ -30,6 +30,11 @@ class Drafting(context: Context) {
         typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
 
+    private val arrowLine = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+    }
+
     /** Толщина размерных и выносных линий. */
     val dimensionLine = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -59,19 +64,25 @@ class Drafting(context: Context) {
     }
 
     /** Вертикальная размерная стрелка от [top] до [bottom] с остриями на концах. */
-    fun arrow(canvas: Canvas, x: Float, top: Float, bottom: Float, color: Int) {
-        val headLength = minOf(7f * density, (bottom - top) / 2)
-        val headWidth = 3.5f * density
-        dimensionLine.color = color
+    fun arrow(canvas: Canvas, x: Float, top: Float, bottom: Float, color: Int, widthDp: Float = 1.2f) {
+        if (bottom - top < 2f) return
+        val headLength = minOf(8f * density, (bottom - top) / 2)
+        val headWidth = 4f * density
+        // Наконечник-«стрелка» с выемкой сзади: так стрелка читается легче, чем треугольником.
+        val notch = headLength * 0.7f
+        arrowLine.color = color
+        arrowLine.strokeWidth = widthDp * density
         fill.color = color
-        canvas.drawLine(x, top + headLength, x, bottom - headLength, dimensionLine)
+        canvas.drawLine(x, top + notch, x, bottom - notch, arrowLine)
         path.reset()
         path.moveTo(x, top)
         path.lineTo(x - headWidth, top + headLength)
+        path.lineTo(x, top + notch)
         path.lineTo(x + headWidth, top + headLength)
         path.close()
         path.moveTo(x, bottom)
         path.lineTo(x - headWidth, bottom - headLength)
+        path.lineTo(x, bottom - notch)
         path.lineTo(x + headWidth, bottom - headLength)
         path.close()
         canvas.drawPath(path, fill)
@@ -99,14 +110,12 @@ class Drafting(context: Context) {
     }
 }
 
-/** Цвета элементов клише: у каждого свой, одинаковый на схеме ввода и на схеме оттисков. */
-object ElementColors {
+/** Цвета ударов на схеме оттисков: у всех элементов одного удара один цвет, у соседних ударов — разные. */
+object StrikeColors {
     private val ids = intArrayOf(
-        R.color.element_1, R.color.element_2, R.color.element_3, R.color.element_4,
-        R.color.element_5, R.color.element_6, R.color.element_7,
+        R.color.strike_1, R.color.strike_2, R.color.strike_3, R.color.strike_4,
+        R.color.strike_5, R.color.strike_6, R.color.strike_7, R.color.strike_8,
     )
-
-    val count: Int get() = ids.size
 
     fun of(context: Context): IntArray = IntArray(ids.size) { context.getColor(ids[it]) }
 }

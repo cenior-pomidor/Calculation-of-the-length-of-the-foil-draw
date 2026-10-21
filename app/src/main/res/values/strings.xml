@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Протяжка фольги</string>
-    <string name="subtitle">Шаг протяжки для горячего тиснения</string>
     <string name="section_die">Клише</string>
     <string name="section_pull">Протяжка</string>
 
@@ -23,7 +22,7 @@
     <string name="savings_hint">без вложения — %1$s мм на удар</string>
     <string name="savings_value">%1$s %%</string>
     <string name="scheme_title">Оттиски на фольге</string>
-    <string name="scheme_hint">Лента от начала ролика: «удар N» — порядок ударов, цвет и номер в кружке — элемент клише. Первый удар заштрихован, стрелка справа — протяжка.</string>
+    <string name="scheme_hint">Лента от начала ролика: у каждого удара свой цвет, номер удара — в кружке. Стрелка справа — протяжка.</string>
     <string name="strike_label">удар %1$d</string>
     <string name="usage_title">Расход фольги</string>
     <string name="run_title">Тираж</string>

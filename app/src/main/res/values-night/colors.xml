@@ -10,18 +10,16 @@
     <color name="on_primary">#14296E</color>
     <color name="primary_container">#2C418C</color>
     <color name="on_primary_container">#DCE2FF</color>
-    <color name="strike">#3A3F4E</color>
-    <color name="on_strike">#D2D6E6</color>
-    <color name="tile">#0C0E13</color>
     <color name="secondary_container">#3E4759</color>
     <color name="on_secondary_container">#DAE2F9</color>
     <color name="error">#FFB4AB</color>
-    <!-- Те же цвета элементов, подобранные для тёмного фона. -->
-    <color name="element_1">#3987E5</color>
-    <color name="element_2">#D95926</color>
-    <color name="element_3">#199E70</color>
-    <color name="element_4">#C98500</color>
-    <color name="element_5">#D55181</color>
-    <color name="element_6">#008300</color>
-    <color name="element_7">#9085E9</color>
+    <!-- Те же цвета ударов, подобранные для тёмного фона. -->
+    <color name="strike_1">#3987E5</color>
+    <color name="strike_2">#D95926</color>
+    <color name="strike_3">#199E70</color>
+    <color name="strike_4">#C98500</color>
+    <color name="strike_5">#D55181</color>
+    <color name="strike_6">#008300</color>
+    <color name="strike_7">#9085E9</color>
+    <color name="strike_8">#E66767</color>
 </resources>

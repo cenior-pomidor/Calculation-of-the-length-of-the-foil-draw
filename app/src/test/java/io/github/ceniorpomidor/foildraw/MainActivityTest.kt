@@ -3,14 +3,18 @@ package io.github.ceniorpomidor.foildraw
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Looper
+import android.os.SystemClock
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.ceniorpomidor.foildraw.ui.SwipePager
 import java.io.File
 import java.time.Duration
 import org.junit.Assert.assertEquals
@@ -42,12 +46,27 @@ class MainActivityTest {
             .map { box -> (0 until box.childCount).map { box.getChildAt(it) }.filterIsInstance<EditText>().single() }
     }
 
-    /** Снимок всего прокручиваемого экрана в app/build/outputs/screenshots. */
-    private fun MainActivity.snapshot(name: String) {
-        // Даём пройти кадрам, как на устройстве: схема дорисовывает анимацию, а поля,
-        // ставшие видимыми, прокручивают текст на место в onPreDraw.
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
-        val content = findViewById<ScrollView>(R.id.scroll).getChildAt(0)
+    private fun idle() = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+
+    private fun save(bitmap: Bitmap, name: String) {
+        val dir = File("build/outputs/screenshots").apply { mkdirs() }
+        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    /** Экран целиком, как его видно на телефоне, — после перехода на вкладку [tab]. */
+    private fun MainActivity.screen(name: String, tab: Int) {
+        findViewById<RadioButton>(tab).performClick()
+        idle()
+        val decor = window.decorView
+        val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
+        decor.draw(Canvas(bitmap))
+        save(bitmap, name)
+    }
+
+    /** Вся прокручиваемая лента экрана [page] целиком, без обрезки по высоте телефона. */
+    private fun MainActivity.fullPage(name: String, page: Int) {
+        idle()
+        val content = findViewById<ScrollView>(page).getChildAt(0)
         content.measure(
             View.MeasureSpec.makeMeasureSpec(resources.displayMetrics.widthPixels, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
@@ -57,8 +76,7 @@ class MainActivityTest {
         val canvas = Canvas(bitmap)
         canvas.drawColor(getColor(R.color.bg))
         content.draw(canvas)
-        val dir = File("build/outputs/screenshots").apply { mkdirs() }
-        File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        save(bitmap, name)
     }
 
     @Test
@@ -71,7 +89,9 @@ class MainActivityTest {
         assertEquals("2,00 мм", activity.text(R.id.clearance_value))
         assertEquals("66 %", activity.text(R.id.savings_value))
         assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.usage_missing).visibility)
-        activity.snapshot("2-elements")
+        activity.screen("1-die", R.id.tab_die)
+        activity.screen("2-pull", R.id.tab_pull)
+        activity.screen("3-usage", R.id.tab_usage)
     }
 
     @Test
@@ -90,7 +110,7 @@ class MainActivityTest {
         assertEquals("1 ролик", activity.text(R.id.usage_total))
         activity.findViewById<EditText>(R.id.run).setText("20000")
         assertEquals("6 роликов", activity.text(R.id.usage_total))
-        activity.snapshot("foil-usage")
+        activity.screen("3-usage-filled", R.id.tab_usage)
     }
 
     @Test
@@ -100,12 +120,11 @@ class MainActivityTest {
         activity.findViewById<RadioButton>(R.id.count_3).performClick()
         assertEquals(5, activity.visibleFields().size)
         assertEquals("100,00 мм", activity.text(R.id.pull_value))
-        activity.snapshot("3-elements")
+        activity.screen("2-pull-3-elements", R.id.tab_pull)
 
         activity.findViewById<RadioButton>(R.id.count_4).performClick()
         assertEquals(7, activity.visibleFields().size)
         assertEquals("150,00 мм", activity.text(R.id.pull_value))
-        activity.snapshot("4-elements")
     }
 
     @Test
@@ -115,7 +134,44 @@ class MainActivityTest {
         activity.findViewById<RadioButton>(R.id.count_7).performClick()
         assertEquals(13, activity.visibleFields().size)
         assertEquals("187,50 мм", activity.text(R.id.pull_value))
-        activity.snapshot("7-elements")
+        activity.fullPage("1-die-7-elements", R.id.page_die)
+        activity.screen("2-pull-7-elements", R.id.tab_pull)
+    }
+
+    @Test
+    fun `impressions scheme fits the screen without scrolling`() {
+        val activity = launch()
+        activity.findViewById<RadioButton>(R.id.count_7).performClick()
+        activity.screen("2-pull-7-elements-check", R.id.tab_pull)
+
+        val scheme = activity.findViewById<View>(R.id.scheme)
+        val location = IntArray(2).also(scheme::getLocationInWindow)
+        assertTrue(scheme.height > 0)
+        assertTrue(location[1] + scheme.height <= activity.window.decorView.height)
+    }
+
+    @Test
+    fun `tabs and swipe switch screens`() {
+        val activity = launch()
+        val pager = activity.findViewById<SwipePager>(R.id.pager)
+        val tabs = activity.findViewById<RadioGroup>(R.id.tabs)
+
+        activity.findViewById<RadioButton>(R.id.tab_usage).performClick()
+        idle()
+        assertEquals(2, pager.page)
+
+        // Свайп вправо — на предыдущий экран.
+        val y = pager.height / 2f
+        val start = SystemClock.uptimeMillis()
+        pager.dispatchTouchEvent(MotionEvent.obtain(start, start, MotionEvent.ACTION_DOWN, pager.width * 0.2f, y, 0))
+        for (step in 1..10) {
+            val x = pager.width * (0.2f + 0.06f * step)
+            pager.dispatchTouchEvent(MotionEvent.obtain(start, start + step * 10L, MotionEvent.ACTION_MOVE, x, y, 0))
+        }
+        pager.dispatchTouchEvent(MotionEvent.obtain(start, start + 110L, MotionEvent.ACTION_UP, pager.width * 0.8f, y, 0))
+        idle()
+        assertEquals(1, pager.page)
+        assertEquals(R.id.tab_pull, tabs.checkedRadioButtonId)
     }
 
     @Test
@@ -141,7 +197,9 @@ class MainActivityTest {
     @Test
     @Config(qualifiers = "+night")
     fun `dark theme`() {
-        launch().snapshot("2-elements-night")
+        val activity = launch()
+        activity.screen("1-die-night", R.id.tab_die)
+        activity.screen("2-pull-night", R.id.tab_pull)
     }
 
     @Test
@@ -151,6 +209,8 @@ class MainActivityTest {
         val keyboard = activity.getSystemService(InputMethodManager::class.java)
 
         field.requestFocus()
+        idle()
+        assertTrue(field.hasFocus())
         keyboard.showSoftInput(field, 0)
         assertTrue(shadowOf(keyboard).isSoftInputVisible)
 
@@ -181,6 +241,6 @@ class MainActivityTest {
         gap.setText("20")
         second.setText("40")
         gap.requestFocus()
-        activity.snapshot("diagram-resized")
+        activity.screen("1-die-resized", R.id.tab_die)
     }
 }

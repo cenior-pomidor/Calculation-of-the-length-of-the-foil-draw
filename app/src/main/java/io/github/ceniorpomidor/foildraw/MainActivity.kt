@@ -20,7 +20,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioGroup
-import android.widget.ScrollView
 import android.widget.TextView
 import io.github.ceniorpomidor.foildraw.calc.FoilCalculator
 import io.github.ceniorpomidor.foildraw.calc.FoilConsumption
@@ -29,12 +28,14 @@ import io.github.ceniorpomidor.foildraw.calc.FoilPattern
 import io.github.ceniorpomidor.foildraw.ui.FoilInputView
 import io.github.ceniorpomidor.foildraw.ui.FoilSchemeView
 import io.github.ceniorpomidor.foildraw.ui.Format
+import io.github.ceniorpomidor.foildraw.ui.SwipePager
 
 class MainActivity : Activity() {
 
     private val heightFields = mutableListOf<EditText>()
     private val gapFields = mutableListOf<EditText>()
     private lateinit var diagram: FoilInputView
+    private lateinit var pager: SwipePager
     private lateinit var minGapField: EditText
     private lateinit var runField: EditText
     private lateinit var rollField: EditText
@@ -46,6 +47,7 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
         prefs = getSharedPreferences("input", MODE_PRIVATE)
         setUpEdgeToEdge()
+        setUpScreens()
 
         diagram = find(R.id.diagram)
         buildDiagram()
@@ -127,8 +129,7 @@ class MainActivity : Activity() {
         field.imeOptions = EditorInfo.IME_ACTION_DONE
         field.setOnEditorActionListener { view, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_DONE || event?.keyCode == KeyEvent.KEYCODE_ENTER) {
-                getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(view.windowToken, 0)
-                view.clearFocus()
+                closeKeyboard(view)
                 true
             } else {
                 false
@@ -223,6 +224,37 @@ class MainActivity : Activity() {
         text(R.id.usage_total_hint, getString(R.string.usage_total_hint, Format.meters(usage.totalLength)))
     }
 
+    /**
+     * Три экрана — клише, протяжка, расход — листаются свайпом или кнопками сверху.
+     * Кнопки и экраны всегда показывают одно и то же; при переходе клавиатура закрывается.
+     */
+    private fun setUpScreens() {
+        pager = find(R.id.pager)
+        val tabs = find<RadioGroup>(R.id.tabs)
+        val tabIds = listOf(R.id.tab_die, R.id.tab_pull, R.id.tab_usage)
+        val page = prefs.getInt("page", 0).coerceIn(0, tabIds.lastIndex)
+        pager.setPage(page, animate = false)
+        tabs.check(tabIds[page])
+        tabs.setOnCheckedChangeListener { _, id ->
+            val index = tabIds.indexOf(id)
+            if (index >= 0 && index != pager.page) {
+                closeKeyboard()
+                pager.setPage(index, animate = true)
+                prefs.edit().putInt("page", index).apply()
+            }
+        }
+        pager.onPageChanged = { index ->
+            closeKeyboard()
+            tabs.check(tabIds[index])
+            prefs.edit().putInt("page", index).apply()
+        }
+    }
+
+    private fun closeKeyboard(focused: View? = currentFocus) {
+        getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow((focused ?: window.decorView).windowToken, 0)
+        focused?.clearFocus()
+    }
+
     /** Красная рамка у поля с недопустимым значением; пустое поле не подсвечиваем, пока его заполняют. */
     private fun EditText.markInvalid(invalid: Boolean) {
         isActivated = invalid && text.isNotBlank()
@@ -236,8 +268,8 @@ class MainActivity : Activity() {
 
     /**
      * С targetSdk 35+ приложение рисуется под системными панелями. Сверху и по бокам
-     * отступаем на их размер, снизу даём контенту прокручиваться под панелью навигации,
-     * а при открытой клавиатуре уменьшаем окно прокрутки, чтобы поле ввода оставалось видно.
+     * отступаем на их размер, снизу экраны прокручиваются под панелью навигации,
+     * а при открытой клавиатуре экраны укорачиваются, чтобы поле ввода оставалось видно.
      */
     @Suppress("DEPRECATION") // Цвета панелей нужны на Android 11–14, на 15+ они и так прозрачные.
     private fun setUpEdgeToEdge() {
@@ -248,17 +280,20 @@ class MainActivity : Activity() {
         window.isNavigationBarContrastEnforced = false
 
         val root = find<View>(R.id.root)
-        val scroll = find<ScrollView>(R.id.scroll)
-        val basePaddingBottom = scroll.paddingBottom
+        val pagerView = find<View>(R.id.pager)
+        val pages = listOf(find<View>(R.id.page_die), find<View>(R.id.page_pull), find<View>(R.id.page_usage))
+        val basePadding = pages.map { it.paddingBottom }
         root.setOnApplyWindowInsetsListener { _, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
             val ime = insets.getInsets(WindowInsets.Type.ime())
             root.setPadding(bars.left, bars.top, bars.right, 0)
-            scroll.setPadding(0, 0, 0, basePaddingBottom + if (ime.bottom > 0) 0 else bars.bottom)
-            val params = scroll.layoutParams as ViewGroup.MarginLayoutParams
+            pages.forEachIndexed { i, page ->
+                page.setPadding(page.paddingLeft, page.paddingTop, page.paddingRight, basePadding[i] + if (ime.bottom > 0) 0 else bars.bottom)
+            }
+            val params = pagerView.layoutParams as ViewGroup.MarginLayoutParams
             if (params.bottomMargin != ime.bottom) {
                 params.bottomMargin = ime.bottom
-                scroll.layoutParams = params
+                pagerView.layoutParams = params
             }
             WindowInsets.CONSUMED
         }
