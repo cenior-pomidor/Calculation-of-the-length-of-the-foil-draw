@@ -2,11 +2,14 @@ package io.github.ceniorpomidor.foildraw.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Typeface
+import io.github.ceniorpomidor.foildraw.R
 
-/** Чертёжные примитивы схем: заштрихованный элемент, как на эскизе, и размерная стрелка. */
+/** Чертёжные примитивы схем: заштрихованный элемент, как на эскизе, размерная стрелка и номер элемента. */
 class Drafting(context: Context) {
     private val density = context.resources.displayMetrics.density
     private val hatchStep = 7f * density
@@ -20,6 +23,11 @@ class Drafting(context: Context) {
     private val outline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 1.5f * density
+    }
+
+    private val badgeText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
     }
 
     /** Толщина размерных и выносных линий. */
@@ -74,4 +82,31 @@ class Drafting(context: Context) {
         dimensionLine.color = color
         canvas.drawLine(from, y, to, y, dimensionLine)
     }
+
+    /** Кружок цвета элемента с его номером; цифра белая или тёмная — что контрастнее. */
+    fun badge(canvas: Canvas, cx: Float, cy: Float, radius: Float, color: Int, number: Int) {
+        fill.color = color
+        canvas.drawCircle(cx, cy, radius, fill)
+        val luminance = Color.luminance(color)
+        badgeText.color = if (1.05f / (luminance + 0.05f) >= (luminance + 0.05f) / 0.062f) Color.WHITE else DARK_TEXT
+        badgeText.textSize = radius * 1.2f
+        val metrics = badgeText.fontMetrics
+        canvas.drawText(number.toString(), cx, cy - (metrics.ascent + metrics.descent) / 2, badgeText)
+    }
+
+    private companion object {
+        const val DARK_TEXT = 0xFF1A1C22.toInt()
+    }
+}
+
+/** Цвета элементов клише: у каждого свой, одинаковый на схеме ввода и на схеме оттисков. */
+object ElementColors {
+    private val ids = intArrayOf(
+        R.color.element_1, R.color.element_2, R.color.element_3, R.color.element_4,
+        R.color.element_5, R.color.element_6, R.color.element_7,
+    )
+
+    val count: Int get() = ids.size
+
+    fun of(context: Context): IntArray = IntArray(ids.size) { context.getColor(ids[it]) }
 }

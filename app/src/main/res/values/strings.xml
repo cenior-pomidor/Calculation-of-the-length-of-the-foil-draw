@@ -5,10 +5,7 @@
     <string name="section_die">Клише</string>
     <string name="section_pull">Протяжка</string>
 
-    <string name="count_title">Количество элементов</string>
-    <string name="count_2">2 элемента</string>
-    <string name="count_3">3 элемента</string>
-    <string name="count_4">4 элемента</string>
+    <string name="count_title">Элементов в клише</string>
     <string name="element_description">Высота элемента %1$d, мм</string>
     <string name="gap_description">Промежуток после элемента %1$d, мм</string>
     <string name="unit_mm">мм</string>
@@ -26,7 +23,8 @@
     <string name="savings_hint">без вложения — %1$s мм на удар</string>
     <string name="savings_value">%1$s %%</string>
     <string name="scheme_title">Оттиски на фольге</string>
-    <string name="scheme_hint">Заштрихован один удар, цифры — порядок ударов. Стрелка справа — протяжка.</string>
+    <string name="scheme_hint">Лента от начала ролика: «удар N» — порядок ударов, цвет и номер в кружке — элемент клише. Первый удар заштрихован, стрелка справа — протяжка.</string>
+    <string name="strike_label">удар %1$d</string>
     <string name="usage_title">Расход фольги</string>
     <string name="run_title">Тираж</string>
     <string name="run_hint">количество ударов</string>

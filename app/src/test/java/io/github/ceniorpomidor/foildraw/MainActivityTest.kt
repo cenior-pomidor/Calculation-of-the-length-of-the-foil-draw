@@ -37,9 +37,9 @@ class MainActivityTest {
     private fun MainActivity.visibleFields(): List<EditText> {
         val diagram = findViewById<ViewGroup>(R.id.diagram)
         return (0 until diagram.childCount)
-            .map { diagram.getChildAt(it) }
+            .map { diagram.getChildAt(it) as ViewGroup }
             .filter { it.visibility == View.VISIBLE }
-            .filterIsInstance<EditText>()
+            .map { box -> (0 until box.childCount).map { box.getChildAt(it) }.filterIsInstance<EditText>().single() }
     }
 
     /** Снимок всего прокручиваемого экрана в app/build/outputs/screenshots. */
@@ -109,6 +109,16 @@ class MainActivityTest {
     }
 
     @Test
+    fun `seven elements`() {
+        val activity = launch()
+
+        activity.findViewById<RadioButton>(R.id.count_7).performClick()
+        assertEquals(13, activity.visibleFields().size)
+        assertEquals("187,50 мм", activity.text(R.id.pull_value))
+        activity.snapshot("7-elements")
+    }
+
+    @Test
     fun `comma and dot are both decimal separators`() {
         val activity = launch()
         val (first, gap, second) = activity.visibleFields()
@@ -156,6 +166,8 @@ class MainActivityTest {
 
         field.setText("5000")
         assertTrue(field.isActivated)
+        // Красную рамку рисует контейнер поля, он берёт состояние у поля.
+        assertTrue((field.parent as View).drawableState.contains(android.R.attr.state_activated))
         field.setText("")
         assertFalse(field.isActivated)
         field.setText("12")

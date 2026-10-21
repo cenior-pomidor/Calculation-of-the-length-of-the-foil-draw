@@ -17,4 +17,12 @@
     <color name="secondary_container">#DCE1F9</color>
     <color name="on_secondary_container">#151B2C</color>
     <color name="error">#BA1A1A</color>
+    <!-- Цвета элементов клише по порядку: синий, оранжевый, бирюзовый, жёлтый, розовый, зелёный, фиолетовый. Палитра проверена на различимость, в том числе при нарушениях цветового зрения. -->
+    <color name="element_1">#2A78D6</color>
+    <color name="element_2">#EB6834</color>
+    <color name="element_3">#1BAF7A</color>
+    <color name="element_4">#EDA100</color>
+    <color name="element_5">#E87BA4</color>
+    <color name="element_6">#008300</color>
+    <color name="element_7">#6250D6</color>
 </resources>

@@ -9,6 +9,7 @@ import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
 import android.text.method.DigitsKeyListener
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
@@ -84,18 +86,32 @@ class MainActivity : Activity() {
         for (i in 0 until MAX_ELEMENTS) {
             val height = numberField(getString(R.string.element_description, i + 1))
             heightFields += height
-            diagram.addDimension(height, TextView(this, null, 0, R.style.Unit), DEFAULT_HEIGHTS[i].toDouble())
+            diagram.addDimension(fieldBox(height), height, DEFAULT_HEIGHTS[i].toDouble())
             if (i < MAX_ELEMENTS - 1) {
                 val gap = numberField(getString(R.string.gap_description, i + 1))
                 gapFields += gap
-                diagram.addDimension(gap, TextView(this, null, 0, R.style.Unit), DEFAULT_GAPS[i].toDouble())
+                diagram.addDimension(fieldBox(gap), gap, DEFAULT_GAPS[i].toDouble())
             }
         }
     }
 
-    private fun numberField(description: String) = EditText(this, null, 0, R.style.Field).apply {
+    private fun numberField(description: String) = EditText(this, null, 0, R.style.Field_Bare).apply {
         importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
         setUpNumberField(this, description)
+    }
+
+    /** Рамка поля со «мм» внутри; фокус и ошибку поля рамка берёт себе через addStatesFromChildren. */
+    private fun fieldBox(field: EditText) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setBackgroundResource(R.drawable.bg_field)
+        setAddStatesFromChildren(true)
+        addView(field, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+        addView(TextView(context, null, 0, R.style.BoxUnit))
+        setOnClickListener {
+            field.requestFocus()
+            getSystemService(InputMethodManager::class.java).showSoftInput(field, 0)
+        }
     }
 
     private fun setUpNumberField(field: EditText, description: String, decimal: Boolean = true) {
@@ -249,7 +265,7 @@ class MainActivity : Activity() {
     }
 
     private companion object {
-        const val MAX_ELEMENTS = 4
+        const val MAX_ELEMENTS = 7
         const val MIN_HEIGHT = 0.5
         const val MAX_SIZE = 1000.0
         const val MAX_MIN_GAP = 100.0
@@ -257,8 +273,11 @@ class MainActivity : Activity() {
         const val MAX_ROLL_LENGTH = 10_000.0
         const val DEFAULT_ROLL_LENGTH = "120"
         const val DEFAULT_MIN_GAP = "1"
-        val DEFAULT_HEIGHTS = listOf("10", "15", "10", "10")
-        val DEFAULT_GAPS = listOf("60", "40", "40")
-        val COUNT_BUTTONS = mapOf(2 to R.id.count_2, 3 to R.id.count_3, 4 to R.id.count_4)
+        val DEFAULT_HEIGHTS = listOf("10", "15", "10", "10", "10", "10", "10")
+        val DEFAULT_GAPS = listOf("60", "40", "40", "40", "40", "40")
+        val COUNT_BUTTONS = mapOf(
+            2 to R.id.count_2, 3 to R.id.count_3, 4 to R.id.count_4,
+            5 to R.id.count_5, 6 to R.id.count_6, 7 to R.id.count_7,
+        )
     }
 }
