@@ -12,6 +12,9 @@ object Format {
 
     fun meters(value: Double): String = String.format(russian, "%.1f", value)
 
+    /** Целое число с пробелами между разрядами: 20 000. */
+    fun count(value: Long): String = String.format(russian, "%,d", value).replace('\u00A0', ' ').replace('\u202F', ' ')
+
     fun rolls(value: Double): String = String.format(russian, "%.2f", value)
 
     /** Форма слова для числа [count] из [forms] — для 1, 2–4 и 5+ по правилам русского языка. */

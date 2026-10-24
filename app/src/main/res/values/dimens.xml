@@ -4,4 +4,5 @@
     <dimen name="unit_margin">8dp</dimen>
     <dimen name="box_width">112dp</dimen>
     <dimen name="box_height">44dp</dimen>
+    <dimen name="scheme_block_height">520dp</dimen>
 </resources>

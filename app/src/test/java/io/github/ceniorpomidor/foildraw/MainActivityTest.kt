@@ -90,9 +90,9 @@ class MainActivityTest {
         assertEquals("2,00 мм", activity.text(R.id.clearance_value))
         assertEquals("66 %", activity.text(R.id.savings_value))
         assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.usage_missing).visibility)
-        activity.screen("1-die", R.id.tab_die)
-        activity.screen("2-pull", R.id.tab_pull)
-        activity.screen("3-usage", R.id.tab_usage)
+        activity.screen("1-main", R.id.tab_die)
+        activity.fullPage("1-main-full", R.id.page_die)
+        activity.screen("2-usage", R.id.tab_usage)
     }
 
     @Test
@@ -101,17 +101,35 @@ class MainActivityTest {
 
         activity.findViewById<EditText>(R.id.run).setText("10000")
         activity.findViewById<EditText>(R.id.roll_length).setText("120")
+        assertEquals("1", activity.findViewById<EditText>(R.id.per_strike).text.toString())
+        assertEquals("10 000", activity.text(R.id.usage_strikes))
         assertEquals("290,0 м · 2,42 ролика", activity.text(R.id.usage_run))
-        assertEquals("На приладку (20 %)", activity.text(R.id.usage_make_ready_title))
+        assertEquals("Запас + приладка (20 %)", activity.text(R.id.usage_make_ready_title))
         assertEquals("58,0 м · 0,48 ролика", activity.text(R.id.usage_make_ready))
         assertEquals("3 ролика", activity.text(R.id.usage_total))
-        assertEquals("348,0 м вместе с приладкой", activity.text(R.id.usage_total_hint))
+        assertEquals("348,0 м фольги вместе с запасом", activity.text(R.id.usage_total_hint))
 
         activity.findViewById<EditText>(R.id.run).setText("2000")
         assertEquals("1 ролик", activity.text(R.id.usage_total))
         activity.findViewById<EditText>(R.id.run).setText("20000")
         assertEquals("6 роликов", activity.text(R.id.usage_total))
-        activity.screen("3-usage-filled", R.id.tab_usage)
+        activity.screen("2-usage-filled", R.id.tab_usage)
+    }
+
+    @Test
+    fun `several labels per strike`() {
+        val activity = launch()
+
+        activity.findViewById<EditText>(R.id.run).setText("10000")
+        activity.findViewById<EditText>(R.id.roll_length).setText("120")
+        activity.findViewById<EditText>(R.id.per_strike).setText("4")
+        assertEquals("2 500", activity.text(R.id.usage_strikes))
+        assertEquals("72,5 м · 0,60 ролика", activity.text(R.id.usage_run))
+        assertEquals("1 ролик", activity.text(R.id.usage_total))
+
+        activity.findViewById<EditText>(R.id.per_strike).setText("0")
+        assertTrue(activity.findViewById<EditText>(R.id.per_strike).isActivated)
+        assertEquals(View.GONE, activity.findViewById<View>(R.id.usage).visibility)
     }
 
     @Test
@@ -121,7 +139,6 @@ class MainActivityTest {
         activity.findViewById<RadioButton>(R.id.count_3).performClick()
         assertEquals(5, activity.visibleFields().size)
         assertEquals("100,00 мм", activity.text(R.id.pull_value))
-        activity.screen("2-pull-3-elements", R.id.tab_pull)
 
         activity.findViewById<RadioButton>(R.id.count_4).performClick()
         assertEquals(7, activity.visibleFields().size)
@@ -135,33 +152,20 @@ class MainActivityTest {
         activity.findViewById<RadioButton>(R.id.count_7).performClick()
         assertEquals(13, activity.visibleFields().size)
         assertEquals("187,50 мм", activity.text(R.id.pull_value))
-        activity.fullPage("1-die-7-elements", R.id.page_die)
-        activity.screen("2-pull-7-elements", R.id.tab_pull)
-    }
-
-    @Test
-    fun `impressions scheme fits the screen without scrolling`() {
-        val activity = launch()
-        activity.findViewById<RadioButton>(R.id.count_7).performClick()
-        activity.screen("2-pull-7-elements-check", R.id.tab_pull)
-
-        val scheme = activity.findViewById<View>(R.id.scheme)
-        val location = IntArray(2).also(scheme::getLocationInWindow)
-        assertTrue(scheme.height > 0)
-        assertTrue(location[1] + scheme.height <= activity.window.decorView.height)
+        activity.fullPage("1-main-7-elements", R.id.page_die)
     }
 
     @Test
     fun `impressions tape scrolls endlessly`() {
         val activity = launch()
-        activity.findViewById<RadioButton>(R.id.tab_pull).performClick()
         idle()
         val scheme = activity.findViewById<FoilSchemeView>(R.id.scheme)
+        assertTrue(scheme.height > 0)
         assertEquals(1, scheme.visibleStrikes().first)
 
         scheme.scrollBy(100_000f)
         assertTrue(scheme.visibleStrikes().first > 100)
-        activity.screen("2-pull-scrolled", R.id.tab_pull)
+        activity.fullPage("1-main-scrolled-tape", R.id.page_die)
 
         scheme.scrollBy(-1_000_000f)
         assertEquals(0f, scheme.offset)
@@ -175,7 +179,7 @@ class MainActivityTest {
 
         activity.findViewById<RadioButton>(R.id.tab_usage).performClick()
         idle()
-        assertEquals(2, pager.page)
+        assertEquals(1, pager.page)
 
         // Свайп вправо — на предыдущий экран.
         val y = pager.height / 2f
@@ -187,8 +191,8 @@ class MainActivityTest {
         }
         pager.dispatchTouchEvent(MotionEvent.obtain(start, start + 110L, MotionEvent.ACTION_UP, pager.width * 0.8f, y, 0))
         idle()
-        assertEquals(1, pager.page)
-        assertEquals(R.id.tab_pull, tabs.checkedRadioButtonId)
+        assertEquals(0, pager.page)
+        assertEquals(R.id.tab_die, tabs.checkedRadioButtonId)
     }
 
     @Test
@@ -215,8 +219,8 @@ class MainActivityTest {
     @Config(qualifiers = "+night")
     fun `dark theme`() {
         val activity = launch()
-        activity.screen("1-die-night", R.id.tab_die)
-        activity.screen("2-pull-night", R.id.tab_pull)
+        activity.fullPage("1-main-night", R.id.page_die)
+        activity.screen("2-usage-night", R.id.tab_usage)
     }
 
     @Test

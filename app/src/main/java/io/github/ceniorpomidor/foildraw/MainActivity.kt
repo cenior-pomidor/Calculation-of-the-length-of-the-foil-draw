@@ -38,6 +38,7 @@ class MainActivity : Activity() {
     private lateinit var pager: SwipePager
     private lateinit var minGapField: EditText
     private lateinit var runField: EditText
+    private lateinit var perStrikeField: EditText
     private lateinit var rollField: EditText
     private lateinit var prefs: SharedPreferences
     private var count = 2
@@ -55,6 +56,8 @@ class MainActivity : Activity() {
         setUpNumberField(minGapField, getString(R.string.min_gap_description))
         runField = find(R.id.run)
         setUpNumberField(runField, getString(R.string.run_description), decimal = false)
+        perStrikeField = find(R.id.per_strike)
+        setUpNumberField(perStrikeField, getString(R.string.per_strike_description), decimal = false)
         rollField = find(R.id.roll_length)
         setUpNumberField(rollField, getString(R.string.roll_description))
         text(R.id.usage_make_ready_title, getString(R.string.usage_make_ready_title, Format.percent(MAKE_READY_SHARE)))
@@ -63,6 +66,7 @@ class MainActivity : Activity() {
         gapFields.forEachIndexed { i, field -> field.setText(prefs.getString("gap$i", DEFAULT_GAPS[i])) }
         minGapField.setText(prefs.getString("minGap", DEFAULT_MIN_GAP))
         runField.setText(prefs.getString("run", ""))
+        perStrikeField.setText(prefs.getString("perStrike", DEFAULT_PER_STRIKE))
         rollField.setText(prefs.getString("roll", DEFAULT_ROLL_LENGTH))
         count = prefs.getInt("count", 2).coerceIn(2, MAX_ELEMENTS)
 
@@ -78,6 +82,7 @@ class MainActivity : Activity() {
         gapFields.forEachIndexed { i, field -> field.saveOnChange("gap$i") }
         minGapField.saveOnChange("minGap")
         runField.saveOnChange("run")
+        perStrikeField.saveOnChange("perStrike")
         rollField.saveOnChange("roll")
 
         recalculate()
@@ -195,12 +200,15 @@ class MainActivity : Activity() {
     private fun renderUsage(pull: Double?) {
         val run = runField.text.toString().trim().toLongOrNull()
         val roll = Format.parse(rollField.text)
+        val perStrike = perStrikeField.text.toString().trim().toIntOrNull()
         val runOk = run != null && run in 1..MAX_RUN
+        val perStrikeOk = perStrike != null && perStrike in 1..MAX_PER_STRIKE
         val rollOk = roll != null && roll >= 1.0 && roll <= MAX_ROLL_LENGTH
         runField.markInvalid(!runOk)
+        perStrikeField.markInvalid(!perStrikeOk)
         rollField.markInvalid(!rollOk)
-        val usage = if (pull != null && runOk && rollOk) {
-            FoilConsumption(pull, run!!, roll!!)
+        val usage = if (pull != null && runOk && perStrikeOk && rollOk) {
+            FoilConsumption(pull, run!!, perStrike!!, roll!!)
         } else {
             null
         }
@@ -208,7 +216,7 @@ class MainActivity : Activity() {
         val message = when {
             usage != null -> null
             pull == null -> getString(R.string.usage_no_pull)
-            runField.text.isBlank() || rollField.text.isBlank() -> getString(R.string.usage_missing)
+            runField.text.isBlank() || perStrikeField.text.isBlank() || rollField.text.isBlank() -> getString(R.string.usage_missing)
             else -> getString(R.string.usage_invalid)
         }
         find<TextView>(R.id.usage_missing).apply {
@@ -218,6 +226,7 @@ class MainActivity : Activity() {
         find<View>(R.id.usage).visibility = if (usage == null) View.GONE else View.VISIBLE
         if (usage == null) return
 
+        text(R.id.usage_strikes, Format.count(usage.strikes))
         text(R.id.usage_run, getString(R.string.usage_length_rolls, Format.meters(usage.runLength), Format.rolls(usage.runRolls)))
         text(R.id.usage_make_ready, getString(R.string.usage_length_rolls, Format.meters(usage.makeReadyLength), Format.rolls(usage.makeReadyRolls)))
         text(R.id.usage_total, Format.plural(usage.rollsNeeded.toLong(), resources.getStringArray(R.array.roll_forms)))
@@ -225,13 +234,13 @@ class MainActivity : Activity() {
     }
 
     /**
-     * Три экрана — клише, протяжка, расход — листаются свайпом или кнопками сверху.
+     * Два экрана — клише с протяжкой и расход фольги — листаются свайпом или кнопками сверху.
      * Кнопки и экраны всегда показывают одно и то же; при переходе клавиатура закрывается.
      */
     private fun setUpScreens() {
         pager = find(R.id.pager)
         val tabs = find<RadioGroup>(R.id.tabs)
-        val tabIds = listOf(R.id.tab_die, R.id.tab_pull, R.id.tab_usage)
+        val tabIds = listOf(R.id.tab_die, R.id.tab_usage)
         val page = prefs.getInt("page", 0).coerceIn(0, tabIds.lastIndex)
         pager.setPage(page, animate = false)
         tabs.check(tabIds[page])
@@ -281,7 +290,7 @@ class MainActivity : Activity() {
 
         val root = find<View>(R.id.root)
         val pagerView = find<View>(R.id.pager)
-        val pages = listOf(find<View>(R.id.page_die), find<View>(R.id.page_pull), find<View>(R.id.page_usage))
+        val pages = listOf(find<View>(R.id.page_die), find<View>(R.id.page_usage))
         val basePadding = pages.map { it.paddingBottom }
         root.setOnApplyWindowInsetsListener { _, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
@@ -305,6 +314,8 @@ class MainActivity : Activity() {
         const val MAX_SIZE = 1000.0
         const val MAX_MIN_GAP = 100.0
         const val MAX_RUN = 9_999_999L
+        const val MAX_PER_STRIKE = 999
+        const val DEFAULT_PER_STRIKE = "1"
         const val MAX_ROLL_LENGTH = 10_000.0
         const val DEFAULT_ROLL_LENGTH = "120"
         const val DEFAULT_MIN_GAP = "1"

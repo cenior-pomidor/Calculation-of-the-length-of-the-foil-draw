@@ -50,6 +50,7 @@ class FoilSchemeView(context: Context, attrs: AttributeSet?) : View(context, att
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
     private val maxFling = ViewConfiguration.get(context).scaledMaximumFlingVelocity
     private var velocity: VelocityTracker? = null
+    private var downX = 0f
     private var downY = 0f
     private var lastY = 0f
     private var dragging = false
@@ -126,16 +127,30 @@ class FoilSchemeView(context: Context, attrs: AttributeSet?) : View(context, att
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 scroller.forceFinished(true)
+                downX = event.x
                 downY = event.y
                 lastY = event.y
                 dragging = false
+                // Лента стоит внутри прокручиваемого экрана: жест сначала забирает она.
+                parent?.requestDisallowInterceptTouchEvent(true)
             }
             MotionEvent.ACTION_MOVE -> {
-                if (!dragging && abs(event.y - downY) > touchSlop) {
-                    dragging = true
-                    lastY = event.y
-                    // Вертикальная прокрутка ленты — не повод листать экраны.
-                    parent?.requestDisallowInterceptTouchEvent(true)
+                if (!dragging) {
+                    val dx = abs(event.x - downX)
+                    val dy = event.y - downY
+                    when {
+                        // Горизонтальный жест — листание экранов, вертикальный вниз у начала
+                        // ленты — прокрутка самого экрана вверх: отдаём родителям.
+                        dx > touchSlop && dx > abs(dy) || dy > touchSlop && offset <= 0f -> {
+                            parent?.requestDisallowInterceptTouchEvent(false)
+                            recycleVelocity()
+                            return false
+                        }
+                        abs(dy) > touchSlop -> {
+                            dragging = true
+                            lastY = event.y
+                        }
+                    }
                 }
                 if (dragging) {
                     scrollBy(lastY - event.y)
