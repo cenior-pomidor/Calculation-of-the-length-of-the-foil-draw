@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
-import io.github.ceniorpomidor.foildraw.R
 
 /** Чертёжные примитивы схем: заштрихованный элемент, как на эскизе, размерная стрелка и номер элемента. */
 class Drafting(context: Context) {
@@ -108,14 +107,4 @@ class Drafting(context: Context) {
     private companion object {
         const val DARK_TEXT = 0xFF1A1C22.toInt()
     }
-}
-
-/** Цвета ударов на схеме оттисков: у всех элементов одного удара один цвет, у соседних ударов — разные. */
-object StrikeColors {
-    private val ids = intArrayOf(
-        R.color.strike_1, R.color.strike_2, R.color.strike_3, R.color.strike_4,
-        R.color.strike_5, R.color.strike_6, R.color.strike_7, R.color.strike_8,
-    )
-
-    fun of(context: Context): IntArray = IntArray(ids.size) { context.getColor(ids[it]) }
 }

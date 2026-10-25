@@ -156,19 +156,32 @@ class MainActivityTest {
     }
 
     @Test
-    fun `impressions tape scrolls endlessly`() {
+    fun `scrolling punches strike after strike`() {
         val activity = launch()
         idle()
         val scheme = activity.findViewById<FoilSchemeView>(R.id.scheme)
+        val strike = scheme.strikeScroll
         assertTrue(scheme.height > 0)
-        assertEquals(1, scheme.visibleStrikes().first)
+        assertEquals(0, scheme.strikesPunched())
 
-        scheme.scrollBy(100_000f)
-        assertTrue(scheme.visibleStrikes().first > 100)
-        activity.fullPage("1-main-scrolled-tape", R.id.page_die)
+        // Первая половина прокрутки удара — клише опускается и выбивает элементы.
+        scheme.scrollBy(strike * 0.25f)
+        assertEquals(0, scheme.strikesPunched())
+        activity.fullPage("1-main-tape-pressing", R.id.page_die)
+        scheme.scrollBy(strike * 0.5f)
+        assertEquals(1, scheme.strikesPunched())
 
-        scheme.scrollBy(-1_000_000f)
-        assertEquals(0f, scheme.offset)
+        // Вторая — протяжка; следующий удар выбивает те же элементы.
+        scheme.scrollBy(strike)
+        assertEquals(2, scheme.strikesPunched())
+        scheme.scrollBy(strike * 0.75f)
+        activity.fullPage("1-main-tape-punched", R.id.page_die)
+
+        scheme.scrollBy(strike * 1000)
+        assertEquals(1003, scheme.strikesPunched())
+
+        scheme.scrollBy(-1_000_000_000f)
+        assertEquals(0, scheme.strikesPunched())
     }
 
     @Test
